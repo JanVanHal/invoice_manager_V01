@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Laundry Invoice Manager</title>
+<title>Invoice Manager</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
@@ -295,7 +295,7 @@
 
 <!-- TOP NAV -->
 <nav class="top-nav">
-  <div class="nav-brand">🧺 Laundry <span>Invoice Manager</span></div>
+  <div class="nav-brand">Invoice <span>Manager</span></div>
   <div class="nav-tabs">
     <div class="nav-tab nav-tab-new" onclick="maybeNewInvoice()" title="New Invoice">＋</div>
     <div class="nav-tab active" onclick="switchTab('invoice')">Invoice</div>
@@ -558,7 +558,7 @@
     </div>
 
     <div class="settings-section-label">Your Company</div>
-    <div class="field-group"><label>Company / Your Name *</label><input type="text" id="s-from-name" placeholder="e.g. Fresh &amp; Clean Laundry Co."></div>
+    <div class="field-group"><label>Company / Your Name *</label><input type="text" id="s-from-name" placeholder="e.g. Your Company Name"></div>
     <div class="field-group"><label>Address Line 1</label><input type="text" id="s-from-addr1" placeholder="Street address"></div>
     <div class="field-group"><label>Address Line 2</label><input type="text" id="s-from-addr2" placeholder="City, ZIP / Postcode"></div>
     <div class="field-group"><label>Address Line 3</label><input type="text" id="s-from-addr3" placeholder="Province / State (optional)"></div>
@@ -624,10 +624,10 @@ let editingInvoiceId = null;
 let clientModalCallback = null;
 
 function loadDB() {
-  const raw = localStorage.getItem('laundry_inv_db_v3');
+  const raw = localStorage.getItem('inv_db_v3');
   if (raw) { try { const parsed = JSON.parse(raw); db = { ...db, ...parsed }; if (!db.settings.currencyCode) db.settings.currencyCode='EUR'; if (!db.settings.currencySymbol) db.settings.currencySymbol='€'; } catch(e) {} }
 }
-function saveDB() { localStorage.setItem('laundry_inv_db_v3', JSON.stringify(db)); }
+function saveDB() { localStorage.setItem('inv_db_v3', JSON.stringify(db)); }
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
 
 function getNextInvoiceNumber() {
@@ -682,10 +682,10 @@ function applyTheme(key) {
   const next = THEMES[(THEMES.indexOf(t) + 1) % THEMES.length];
   const btn = document.getElementById('theme-toggle-btn');
   if (btn) btn.textContent = t.label + ' →';
-  localStorage.setItem('laundry_theme', key);
+  localStorage.setItem('inv_theme', key);
 }
 function cycleTheme() {
-  const cur = localStorage.getItem('laundry_theme') || 'light';
+  const cur = localStorage.getItem('inv_theme') || 'light';
   const idx = THEMES.findIndex(t => t.key === cur);
   const next = THEMES[(idx + 1) % THEMES.length];
   applyTheme(next.key);
@@ -881,14 +881,14 @@ function g(id) { const el = document.getElementById(id); return el ? el.value.tr
 function autoSubjectValue(dateVal) {
   if (!dateVal) return '';
   const [y, m] = dateVal.split('-');
-  return `Laundry ${MONTHS[parseInt(m,10)-1]} ${y}`;
+  return `${MONTHS[parseInt(m,10)-1]} ${y}`;
 }
 function autofillSubject() {
   const subEl = document.getElementById('subject');
   const dateVal = document.getElementById('inv-date').value;
   const current = subEl.value.trim();
   // Only autofill if blank or if it still matches a previously auto-generated value
-  if (!current || MONTHS.some(mn => current.startsWith('Laundry ' + mn))) {
+  if (!current || MONTHS.some(mn => current.startsWith(mn + ' '))) {
     subEl.value = autoSubjectValue(dateVal);
   }
 }
@@ -1376,7 +1376,7 @@ document.getElementById('unsaved-modal').addEventListener('click', function(e){ 
 
 // ── INIT ──
 (function init() {
-  applyTheme(localStorage.getItem('laundry_theme') || 'light');
+  applyTheme(localStorage.getItem('inv_theme') || 'light');
   loadDB();
   populateClientDropdown();
   renderLineEditor();
