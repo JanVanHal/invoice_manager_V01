@@ -373,39 +373,14 @@ function saveInvoice() {
   const date = g('inv-date');
   if (!toName) { alert('Please fill in the client name.'); return; }
   if (!date) { alert('Please set the invoice date.'); return; }
-  const { grand } = computeTotal();
-  const s = db.settings;
-  const invObj = {
-    id: editingInvoiceId || uid(),
-    number: g('inv-number'), date, clientId: document.getElementById('client-select').value,
-    clientName: toName, toAddr1: g('to-addr1'), toAddr2: g('to-addr2'), toCountry: g('to-country'),
-    subject: g('subject'), lines: JSON.parse(JSON.stringify(lines)),
-    vatRate: parseFloat(document.getElementById('vat-rate').value)||0,
-    grandTotal: grand,
-    currencySymbol: getCurrencySymbol()
-  };
-  if (editingInvoiceId) {
-    const idx = db.invoices.findIndex(i => i.id === editingInvoiceId);
-    if (idx !== -1) {
-      invObj.paid = db.invoices[idx].paid; // preserve existing paid status
-      db.invoices[idx] = invObj;
-    } else {
-      invObj.paid = false;
-      db.invoices.push(invObj);
-    }
-    editingInvoiceId = null;
-    showToast('Invoice updated.');
-  } else {
-    invObj.paid = false;
-    db.invoices.push(invObj);
-    showToast('Invoice saved!');
-  }
-  saveDB();
+  _saveInvoiceData();
   switchTab('invoices');
 }
 
 function hasUnsavedContent() {
-  // Consider there's something worth saving if: client name is filled, OR any line has a description/price
+  // If editing an existing invoice, always treat as having unsaved changes
+  if (editingInvoiceId) return true;
+  // For a blank new invoice, only prompt if the user has actually entered something
   const clientName = g('to-name');
   const hasLines = lines.some(l => l.desc.trim() || l.price > 0);
   return !!(clientName || hasLines);
@@ -430,15 +405,24 @@ function discardAndNew() {
 
 function saveAndNew() {
   closeUnsavedModal();
-  // Reuse saveInvoice logic but then start a new invoice instead of switching to list
   const toName = g('to-name');
   const date = g('inv-date');
   if (!toName) { alert('Please fill in the client name to save.'); return; }
   if (!date) { alert('Please set the invoice date to save.'); return; }
+  _saveInvoiceData();
+  newInvoice();
+}
+
+// Internal: persist the current editor state (update existing or insert new).
+// Used by both saveInvoice() and saveAndNew() to avoid duplicated logic.
+function _saveInvoiceData() {
+  const toName = g('to-name');
+  const date = g('inv-date');
   const { grand } = computeTotal();
   const invObj = {
     id: editingInvoiceId || uid(),
-    number: g('inv-number'), date, clientId: document.getElementById('client-select').value,
+    number: g('inv-number'), date,
+    clientId: document.getElementById('client-select').value,
     clientName: toName, toAddr1: g('to-addr1'), toAddr2: g('to-addr2'), toCountry: g('to-country'),
     subject: g('subject'), lines: JSON.parse(JSON.stringify(lines)),
     vatRate: parseFloat(document.getElementById('vat-rate').value)||0,
@@ -448,19 +432,20 @@ function saveAndNew() {
   if (editingInvoiceId) {
     const idx = db.invoices.findIndex(i => i.id === editingInvoiceId);
     if (idx !== -1) {
-      invObj.paid = db.invoices[idx].paid;
+      invObj.paid = db.invoices[idx].paid; // preserve paid status
       db.invoices[idx] = invObj;
     } else {
       invObj.paid = false;
       db.invoices.push(invObj);
     }
+    editingInvoiceId = null;
+    showToast('Invoice updated ✓');
   } else {
     invObj.paid = false;
     db.invoices.push(invObj);
+    showToast('Invoice saved ✓');
   }
   saveDB();
-  showToast('Invoice saved ✓');
-  newInvoice();
 }
 
 function newInvoice() {
